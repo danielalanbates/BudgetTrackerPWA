@@ -5,18 +5,17 @@ echo "Building PWA..."
 npm run build
 
 echo "Deploying to GitHub Pages..."
-git add dist/
-git commit -m "Deploy dist to GitHub Pages" || echo "No changes to commit"
-git push origin main
+# Create temporary branch with only dist contents
+git checkout --orphan temp-gh-pages
+git rm -rf .
+git add -f dist/
+git commit -m "Deploy to GitHub Pages"
+git branch -m gh-pages
+git push origin gh-pages --force
+git checkout main
 
 echo ""
-echo "✓ Build complete!"
+echo "✓ Deployed to GitHub Pages!"
 echo ""
-echo "To enable GitHub Pages:"
-echo "1. Go to: https://github.com/danielalanbates/BudgetTrackerPWA/settings/pages"
-echo "2. Under 'Build and deployment', select Source: Deploy from a branch"
-echo "3. Branch: main, Folder: /dist"
-echo "4. Click Save"
-echo ""
-echo "Once enabled, your app will be live at:"
-echo "https://danielalanbates.github.io/BudgetTrackerPWA/"
+echo "Enable at: https://github.com/danielalanbates/BudgetTrackerPWA/settings/pages"
+echo "Your app will be live at: https://danielalanbates.github.io/BudgetTrackerPWA/"
