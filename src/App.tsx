@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import Login from './components/Login';
 
 interface Transaction {
   id: number;
@@ -16,23 +17,64 @@ interface BudgetCategory {
   color: string;
 }
 
+// Demo data for public version (no real personal data)
+const DEMO_TRANSACTIONS: Transaction[] = [
+  { id: 1, description: 'Monthly Salary', amount: 5000, category: 'Income', date: '2026-03-01', type: 'income' },
+  { id: 2, description: 'Grocery Store', amount: 150, category: 'Food', date: '2026-03-05', type: 'expense' },
+  { id: 3, description: 'Gas Station', amount: 45, category: 'Transportation', date: '2026-03-07', type: 'expense' },
+  { id: 4, description: 'Electric Bill', amount: 120, category: 'Utilities', date: '2026-03-10', type: 'expense' },
+  { id: 5, description: 'Freelance Project', amount: 800, category: 'Income', date: '2026-03-15', type: 'income' },
+];
+
+const DEMO_BUDGETS: BudgetCategory[] = [
+  { name: 'Food', limit: 500, spent: 150, color: '#FF9500' },
+  { name: 'Transportation', limit: 200, spent: 45, color: '#007AFF' },
+  { name: 'Utilities', limit: 300, spent: 120, color: '#FF3B30' },
+  { name: 'Entertainment', limit: 150, spent: 0, color: '#AF52DE' },
+];
+
 function App() {
   const [activeTab, setActiveTab] = useState<'dashboard' | 'transactions' | 'budgets'>('dashboard');
-  
-  const [transactions] = useState<Transaction[]>([
-    { id: 1, description: 'Salary', amount: 5000, category: 'Income', date: '2026-03-01', type: 'income' },
-    { id: 2, description: 'Grocery Store', amount: 150, category: 'Food', date: '2026-03-05', type: 'expense' },
-    { id: 3, description: 'Gas Station', amount: 45, category: 'Transportation', date: '2026-03-07', type: 'expense' },
-    { id: 4, description: 'Electric Bill', amount: 120, category: 'Utilities', date: '2026-03-10', type: 'expense' },
-    { id: 5, description: 'Freelance Project', amount: 800, category: 'Income', date: '2026-03-15', type: 'income' },
-  ]);
+  const [transactions, setTransactions] = useState<Transaction[]>(DEMO_TRANSACTIONS);
+  const [budgets, setBudgets] = useState<BudgetCategory[]>(DEMO_BUDGETS);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
 
-  const [budgets] = useState<BudgetCategory[]>([
-    { name: 'Food', limit: 500, spent: 150, color: '#FF9500' },
-    { name: 'Transportation', limit: 200, spent: 45, color: '#007AFF' },
-    { name: 'Utilities', limit: 300, spent: 120, color: '#FF3B30' },
-    { name: 'Entertainment', limit: 150, spent: 0, color: '#AF52DE' },
-  ]);
+  useEffect(() => {
+    // Check for existing auth token
+    const token = localStorage.getItem('authToken');
+    if (token) {
+      setIsAuthenticated(true);
+      loadRealData();
+    }
+  }, []);
+
+  const loadRealData = async () => {
+    try {
+      const token = localStorage.getItem('authToken');
+      const response = await fetch('https://batesai.org/api/budget/data', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setTransactions(data.transactions || DEMO_TRANSACTIONS);
+        setBudgets(data.budgets || DEMO_BUDGETS);
+      }
+    } catch (error) {
+      console.log('Using demo data - backend unavailable');
+    }
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem('authToken');
+    localStorage.removeItem('userId');
+    setIsAuthenticated(false);
+    setTransactions(DEMO_TRANSACTIONS);
+    setBudgets(DEMO_BUDGETS);
+  };
+
+  if (!isAuthenticated) {
+    return <Login onLogin={() => { setIsAuthenticated(true); loadRealData(); }} />;
+  }
 
   const totalIncome = transactions.filter(t => t.type === 'income').reduce((sum, t) => sum + t.amount, 0);
   const totalExpenses = transactions.filter(t => t.type === 'expense').reduce((sum, t) => sum + t.amount, 0);
@@ -45,10 +87,29 @@ function App() {
         background: 'linear-gradient(135deg, #007AFF, #5856D6)',
         padding: '60px 20px 40px',
         color: 'white',
-        textAlign: 'center'
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center'
       }}>
-        <h1 style={{ fontSize: '28px', fontWeight: '700', marginBottom: '8px' }}>Budget Tracker</h1>
-        <p style={{ fontSize: '14px', opacity: 0.9 }}>Bates LLC</p>
+        <div>
+          <h1 style={{ fontSize: '28px', fontWeight: '700', marginBottom: '8px' }}>Budget Tracker</h1>
+          <p style={{ fontSize: '14px', opacity: 0.9 }}>Bates LLC</p>
+        </div>
+        <button
+          onClick={handleLogout}
+          style={{
+            background: 'rgba(255,255,255,0.2)',
+            border: 'none',
+            color: 'white',
+            padding: '8px 16px',
+            borderRadius: '8px',
+            fontSize: '14px',
+            fontWeight: '500',
+            cursor: 'pointer'
+          }}
+        >
+          Sign Out
+        </button>
       </header>
 
       {/* Main Content */}
@@ -78,32 +139,32 @@ function App() {
         paddingBottom: 'env(safe-area-inset-bottom)',
         zIndex: 1000
       }}>
-        <TabButton 
-          icon="📊" 
-          label="Dashboard" 
-          active={activeTab === 'dashboard'} 
-          onClick={() => setActiveTab('dashboard')} 
+        <TabButton
+          icon="📊"
+          label="Dashboard"
+          active={activeTab === 'dashboard'}
+          onClick={() => setActiveTab('dashboard')}
         />
-        <TabButton 
-          icon="💳" 
-          label="Transactions" 
-          active={activeTab === 'transactions'} 
-          onClick={() => setActiveTab('transactions')} 
+        <TabButton
+          icon="💳"
+          label="Transactions"
+          active={activeTab === 'transactions'}
+          onClick={() => setActiveTab('transactions')}
         />
-        <TabButton 
-          icon="📅" 
-          label="Budgets" 
-          active={activeTab === 'budgets'} 
-          onClick={() => setActiveTab('budgets')} 
+        <TabButton
+          icon="📅"
+          label="Budgets"
+          active={activeTab === 'budgets'}
+          onClick={() => setActiveTab('budgets')}
         />
       </nav>
     </div>
   );
 }
 
-function Dashboard({ balance, income, expenses, budgets }: { 
-  balance: number; 
-  income: number; 
+function Dashboard({ balance, income, expenses, budgets }: {
+  balance: number;
+  income: number;
   expenses: number;
   budgets: BudgetCategory[];
 }) {
@@ -237,7 +298,7 @@ function BudgetsList({ budgets }: { budgets: BudgetCategory[] }) {
             }} />
           </div>
           <p style={{ fontSize: '13px', color: '#8E8E93', marginTop: '8px' }}>
-            ${budget.spent} spent (${Math.round((budget.spent / budget.limit) * 100)}%)
+            ${budget.spent} spent ({Math.round((budget.spent / budget.limit) * 100)}%)
           </p>
         </div>
       ))}
@@ -245,10 +306,10 @@ function BudgetsList({ budgets }: { budgets: BudgetCategory[] }) {
   );
 }
 
-function TabButton({ icon, label, active, onClick }: { 
-  icon: string; 
-  label: string; 
-  active: boolean; 
+function TabButton({ icon, label, active, onClick }: {
+  icon: string;
+  label: string;
+  active: boolean;
   onClick: () => void;
 }) {
   return (
