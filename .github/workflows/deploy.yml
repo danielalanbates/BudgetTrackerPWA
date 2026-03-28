@@ -34,6 +34,9 @@ jobs:
       - name: Build
         run: npm run build
 
+      - name: Copy CNAME to dist
+        run: cp CNAME dist/
+
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
@@ -49,10 +52,3 @@ jobs:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
-
-      - name: Deploy to Custom Domain (batesai.org)
-        run: |
-          echo "Deploying to autobudgeteer.batesai.org..."
-          # Custom domain deployment handled via repository settings
-          echo "✓ GitHub Pages deployment complete"
-          echo "✓ Custom domain: autobudgeteer.batesai.org"
